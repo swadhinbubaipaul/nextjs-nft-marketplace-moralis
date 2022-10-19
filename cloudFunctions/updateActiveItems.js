@@ -34,11 +34,11 @@ Moralis.Cloud.afterSave("ItemCanceled", async (request) => {
   if (confirmed) {
     const ActiveItem = Moralis.Object.extend("ActiveItem");
     const query = new Moralis.Query(ActiveItem);
-    query.equalTo("nftMarketplaceAddress", request.object.get("address"));
+    query.equalTo("marketplaceAddress", request.object.get("address"));
     query.equalTo("nftAddress", request.object.get("nftAddress"));
     query.equalTo("tokenId", request.object.get("tokenId"));
     logger.info(`Marketplace | Query: ${query}`);
-    const canceledItem = query.first();
+    const canceledItem = await query.first();
     logger.info(`Marketplace | CanceledItem: ${canceledItem}`);
     if (canceledItem) {
       logger.info(
@@ -50,6 +50,36 @@ Moralis.Cloud.afterSave("ItemCanceled", async (request) => {
     } else {
       logger.info(
         `No item found with address ${request.object.get(
+          "address"
+        )} and tokenId ${request.object.get("tokenId")}`
+      );
+    }
+  }
+});
+
+Moralis.Cloud.afterSave("ItemBought", async (request) => {
+  const confirmed = request.object.get("confirmed");
+  const logger = Moralis.Cloud.getLogger();
+  logger.info(`Marketplace | Object: ${request.object}`);
+  if (confirmed) {
+    const ActiveItem = Moralis.Object.extend("ActiveItem");
+    const query = new Moralis.Query(ActiveItem);
+    query.equalTo("marketplaceAddress", request.object.get("address"));
+    query.equalTo("nftAddress", request.object.get("nftAddress"));
+    query.equalTo("tokenId", request.object.get("tokenId"));
+    logger.info(`Marketplace | Query: ${query}`);
+    const boughtItem = await query.first();
+    if (boughtItem) {
+      logger.info(`Deleting ${request.object.get("objectId")}`);
+      await boughtItem.destroy();
+      logger.info(
+        `Deleted item with Token Id ${request.object.get(
+          "tokenId"
+        )} at address ${request.object.get("address")}`
+      );
+    } else {
+      logger.info(
+        `No item found with address: ${request.object.get(
           "address"
         )} and tokenId ${request.object.get("tokenId")}`
       );
